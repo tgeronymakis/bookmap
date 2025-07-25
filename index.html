@@ -240,26 +240,45 @@
 
     let geoLayer;
 
-    fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
-      .then(res => res.json())
-      .then(data => {
-        geoLayer = L.geoJson(data, {
-          style: feature => ({
-            fillColor: getFillColor(feature.properties.name),
-            weight: 1,
-            color: '#2d3436',
-            fillOpacity: booksData[feature.properties.name] ? 0.7 : 0.2
-          }),
-          onEachFeature: (feature, layer) => {
-            const country = feature.properties.name;
-            layer.on('click', () => {
-		    layer.setStyle({ fillColor: '#27b338' });
-		    showCountryBooks(country);
-	    });
-            layer.bindTooltip(country);
+    let highlightedLayer = null;  // keep track of currently highlighted country
+
+fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+  .then(res => res.json())
+  .then(data => {
+    geoLayer = L.geoJson(data, {
+      style: feature => ({
+        fillColor: getFillColor(feature.properties.name),
+        weight: 1,
+        color: '#2d3436',
+        fillOpacity: booksData[feature.properties.name] ? 0.7 : 0.2
+      }),
+      onEachFeature: (feature, layer) => {
+        const country = feature.properties.name;
+        layer.on('click', () => {
+          // Revert previous highlighted layer if any
+          if (highlightedLayer && highlightedLayer !== layer) {
+            highlightedLayer.setStyle({
+              fillColor: highlightedLayer.options.fillColor,
+              fillOpacity: highlightedLayer.options.fillOpacity
+            });
           }
-        }).addTo(map);
-      });
+
+          // Save this layer as currently highlighted
+          highlightedLayer = layer;
+
+          // Set this layer's style to green
+          layer.setStyle({
+            fillColor: '#27b338',
+            fillOpacity: 0.7
+          });
+
+          showCountryBooks(country);
+        });
+        layer.bindTooltip(country);
+      }
+    }).addTo(map);
+  });
+
 
     function getFillColor(featureName) {
       if (!booksData[featureName]) return '#dfe6e9';
