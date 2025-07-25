@@ -254,6 +254,7 @@
             const country = feature.properties.name;
             layer.on('click', () => {
 		    console.log(layer);
+		    layer.options.fillColor = '#27b338';
 		    showCountryBooks(country);
 	    });
             layer.bindTooltip(country);
