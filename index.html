@@ -244,6 +244,7 @@
       .then(res => res.json())
       .then(data => {
         geoLayer = L.geoJson(data, {
+	  console.log(feature);
           style: feature => ({
             fillColor: getFillColor(feature.properties.name),
             weight: 1,
