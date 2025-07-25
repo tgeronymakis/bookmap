@@ -252,7 +252,10 @@
           }),
           onEachFeature: (feature, layer) => {
             const country = feature.properties.name;
-            layer.on('click', () => showCountryBooks(country));
+            layer.on('click', () => {
+		    console.log(layer);
+		    showCountryBooks(country);
+	    });
             layer.bindTooltip(country);
           }
         }).addTo(map);
@@ -264,6 +267,7 @@
         case 2: return '#E39A0E';
         case 3: return '#0EE358';
         case 4: return '#E30EB5';
+	case 1: return '#6c5ce7'; 
         default: return '#6c5ce7';
       }
     }
