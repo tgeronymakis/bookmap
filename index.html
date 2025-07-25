@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Books We've Read Around the World</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+      color: #2d3436;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      background: linear-gradient(to right, #6c5ce7, #a29bfe);
+      color: white;
+      padding: 1rem;
+      margin: 0;
+      font-size: 1.75rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #map {
+      width: 45%;
+      height: 100%;
+      border-right: 2px solid #dcdde1;
+    }
+
+    #infoPanel {
+      width: 25%;
+      padding: 1.5rem;
+      background: #f5f6fa;
+      overflow-y: auto;
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease-in-out;
+    }
+
+    #sidePanels {
+      width: 30%;
+      display: flex;
+      flex-direction: column;
+      background: #f5f6fa;
+      overflow-y: auto;
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
+    }
+
+    #countriesPanel, #booksPanel {
+      flex: 1;
+      padding: 1rem;
+      border-top: 1px solid #dcdde1;
+    }
+
+    .panel-title {
+      margin: 0 0 0.5rem 0;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #6c5ce7;
+    }
+
+    .country-item, .book-item {
+      cursor: pointer;
+      background: white;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border-radius: 8px;
+      transition: background 0.2s;
+      font-size: 0.95rem;
+    }
+
+    .country-item:hover, .book-item:hover {
+      background: #e4e7fa;
+    }
+
+    #infoPanel h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    #infoPanel ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    #infoPanel li {
+      background: white;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #calendar {
+      background: #fff8f0;
+      padding: 1rem 2rem;
+      overflow-x: auto;
+    }
+
+    .timeline-bar {
+      width: 100%;
+      height: 100px;
+    }
+
+    .month-dot {
+      cursor: pointer;
+      fill: #6c5ce7;
+    }
+
+    .month-label {
+      font-size: 12px;
+      fill: #2d3436;
+      text-anchor: middle;
+    }
+
+    .leaflet-interactive:focus {
+      outline: none;
+    }
+    
+    #book-list {
+    	overflow-y: scroll;
+    	max-height: 10%;
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 Books We've Read Around the World 🌍</h1>
+  <div class="container">
+    <div id="map"></div>
+    <div id="infoPanel">Click on any country to see the books you've read from there.</div>
+    <div id="sidePanels">
+      <div id="countriesPanel"></div>
+      <div id="booksPanel"></div>
+    </div>
+  </div>
+  <div id="calendar">
+    <svg class="timeline-bar" id="timelineSVG"></svg>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const booksData = {
+  "United Kingdom": {
+    flag: "🇬🇧",
+    books: [
+      { title: "1984", author: "George Orwell", year: 1949, monthPicked: "June 2024", rating: 5 },
+      { title: "Animal Farm", author: "George Orwell", year: 1945, monthPicked: "July 2023", rating: 4.8 },
+      { title: "Brave New World", author: "Aldous Huxley", year: 1932, monthPicked: "August 2024", rating: 4.3 },
+      { title: "A Clockwork Orange", author: "Anthony Burgess", year: 1962, monthPicked: "February 2023", rating: 4 },
+      { title: "Never Let Me Go", author: "Kazuo Ishiguro", year: 2005, monthPicked: "March 2024", rating: 4.3 }
+    ]
+  },
+  "Japan": {
+    flag: "🇯🇵",
+    books: [
+      { title: "The Library of Hidden Dreams", author: "Mitsuko Aoyama", year: 2020, monthPicked: "July 2024", rating: 3.9 },
+      { title: "1Q84 (Part 1)", author: "Haruki Murakami", year: 2009, monthPicked: "June 2024", rating: 4.2 },
+      { title: "1Q84 (Part 2)", author: "Haruki Murakami", year: 2009, monthPicked: "July 2024", rating: 4.3 },
+      { title: "1Q84 (Part 3)", author: "Haruki Murakami", year: 2010, monthPicked: "August 2024", rating: 4.4 }
+    ]
+  },
+  "Russia": {
+    flag: "🇷🇺",
+    books: [
+      { title: "Heart of a Dog", author: "Mikhail Bulgakov", year: 1925, monthPicked: "February 2024", rating: 4.2 },
+      { title: "The Death of Ivan Ilyich", author: "Leo Tolstoy", year: 1886, monthPicked: "March 2024", rating: 4.3 },
+      { title: "White Nights", author: "Fyodor Dostoevsky", year: 1848, monthPicked: "April 2024", rating: 4.1 },
+      { title: "The Underground", author: "Fyodor Dostoevsky", year: 1864, monthPicked: "September 2024", rating: 4.2 },
+      { title: "Crime and Punishment", author: "Fyodor Dostoevsky", year: 1866, monthPicked: "October 2024", rating: 4.6 },
+      { title: "Ward No. 6", author: "Anton Chekhov", year: 1892, monthPicked: "November 2024", rating: 4.1 }
+    ]
+  },
+  "United States": {
+    flag: "🇺🇸",
+    books: [
+      { title: "Fahrenheit 451", author: "Ray Bradbury", year: 1953, monthPicked: "April 2023", rating: 4.2 },
+      { title: "The Time Machine", author: "H. G. Wells", year: 1895, monthPicked: "May 2023", rating: 4 },
+      { title: "The Old Man and the Sea", author: "Ernest Hemingway", year: 1952, monthPicked: "June 2023", rating: 4.4 },
+      { title: "Slaughterhouse-Five", author: "Kurt Vonnegut", year: 1969, monthPicked: "August 2023", rating: 4.1 },
+      { title: "The Catcher in the Rye", author: "J. D. Salinger", year: 1951, monthPicked: "October 2024", rating: 4.1 },
+      { title: "The Great Gatsby", author: "F. Scott Fitzgerald", year: 1925, monthPicked: "November 2024", rating: 4.2 },
+      { title: "Of Mice and Men", author: "John Steinbeck", year: 1937, monthPicked: "September 2024", rating: 4.3 },
+      { title: "The Pearl", author: "John Steinbeck", year: 1947, monthPicked: "October 2024", rating: 4 },
+      { title: "Stoner", author: "John Williams", year: 1965, monthPicked: "January 2024", rating: 4.6 },
+      { title: "The Secret History", author: "Donna Tartt", year: 1992, monthPicked: "February 2024", rating: 4.4 },
+      { title: "Go Set a Watchman", author: "Harper Lee", year: 2015, monthPicked: "February 2024", rating: 3.9 },
+      { title: "To Kill a Mockingbird", author: "Harper Lee", year: 1960, monthPicked: "March 2024", rating: 4.7 },
+      { title: "Butcher's Crossing", author: "John Williams", year: 1960, monthPicked: "August 2024", rating: 4.3 },
+      { title: "The Road", author: "Cormac McCarthy", year: 2006, monthPicked: "September 2024", rating: 4.5 },
+      { title: "The Nightingale", author: "Kristin Hannah", year: 2015, monthPicked: "October 2024", rating: 4.6 },
+      { title: "Small Things Like These", author: "Claire Keegan", year: 2021, monthPicked: "November 2024", rating: 4.4 }
+    ]
+  },
+  "France": {
+    flag: "🇫🇷",
+    books: [
+      { title: "The Stranger", author: "Albert Camus", year: 1942, monthPicked: "May 2024", rating: 4.2 }
+    ]
+  },
+  "Portugal": {
+    flag: "🇵🇹",
+    books: [
+      { title: "The Anarchist Banker", author: "Fernando Pessoa", year: 1922, monthPicked: "April 2024", rating: 4 }
+    ]
+  },
+  "Germany": {
+    flag: "🇩🇪",
+    books: [
+      { title: "All Quiet on the Western Front", author: "Erich Maria Remarque", year: 1928, monthPicked: "November 2024", rating: 4.5 }
+    ]
+  },
+  "United States (Duplicate)": {
+    flag: "🇺🇸",
+    books: [
+      { title: "Little Women", author: "Louisa May Alcott", year: 1868, monthPicked: "May 2024", rating: 4.4 },
+      { title: "Little Women Get Married", author: "Louisa May Alcott", year: 1869, monthPicked: "June 2024", rating: 4.2 }
+    ]
+  }
+};
+
+
+
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let geoLayer;
+
+    fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+      .then(res => res.json())
+      .then(data => {
+        geoLayer = L.geoJson(data, {
+          style: feature => ({
+            fillColor: getFillColor(feature.properties.name),
+            weight: 1,
+            color: '#2d3436',
+            fillOpacity: booksData[feature.properties.name] ? 0.7 : 0.2
+          }),
+          onEachFeature: (feature, layer) => {
+            const country = feature.properties.name;
+            layer.on('click', () => showCountryBooks(country));
+            layer.bindTooltip(country);
+          }
+        }).addTo(map);
+      });
+
+    function getFillColor(featureName) {
+      if (!booksData[featureName]) return '#dfe6e9';
+      switch (booksData[featureName].books.length) {
+        case 2: return '#E39A0E';
+        case 3: return '#0EE358';
+        case 4: return '#E30EB5';
+        default: return '#6c5ce7';
+      }
+    }
+
+    function showCountryBooks(country) {
+      const info = booksData[country];
+      let html = `<h2>${info?.flag || ''} ${country}</h2>`;
+      if (info?.books?.length) {
+        html += '<ul>';
+        info.books.forEach(book => {
+          html += `<li><strong>${book.title}</strong> by ${book.author} (${book.year})<br>
+            Picked: ${book.monthPicked}<br>Rating: ⭐ ${book.rating}</li>`;
+        });
+        html += '</ul>';
+      } else {
+        html += '<p>No books read from this country yet.</p>';
+      }
+      document.getElementById('infoPanel').innerHTML = html;
+
+      geoLayer.eachLayer(layer => {
+        if (layer.feature.properties.name === country) {
+          map.flyToBounds(layer.getBounds().pad(0.5), { duration: 1 });
+        }
+      });
+    }
+
+    function generateTimeline() {
+      const svg = document.getElementById('timelineSVG');
+      const width = svg.clientWidth;
+      const height = svg.clientHeight;
+      const months = new Set();
+
+      for (const country in booksData) {
+        for (const book of booksData[country].books) {
+          months.add(book.monthPicked);
+        }
+      }
+
+      const sortedMonths = Array.from(months).sort((a, b) => new Date('1 ' + a) - new Date('1 ' + b));
+      const spacing = width / (sortedMonths.length + 1);
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", spacing);
+      line.setAttribute("y1", height / 2);
+      line.setAttribute("x2", spacing * sortedMonths.length);
+      line.setAttribute("y2", height / 2);
+      line.setAttribute("stroke", "#b2bec3");
+      line.setAttribute("stroke-width", "2");
+      svg.appendChild(line);
+
+      sortedMonths.forEach((month, i) => {
+        const cx = spacing * (i + 1);
+        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("cx", cx);
+        dot.setAttribute("cy", height / 2);
+        dot.setAttribute("r", 8);
+        dot.classList.add('month-dot');
+        dot.addEventListener('click', () => focusMonth(month));
+        svg.appendChild(dot);
+
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", cx);
+        label.setAttribute("y", height / 2 + 25);
+        label.textContent = month;
+        label.classList.add('month-label');
+        svg.appendChild(label);
+      });
+    }
+
+    function focusMonth(month) {
+      const matchedCountries = [];
+      const bounds = L.latLngBounds();
+      let html = `<h2>📅 Books Read in ${month}</h2>`;
+
+      for (const country in booksData) {
+        const matchedBooks = booksData[country].books.filter(book => book.monthPicked === month);
+        if (matchedBooks.length) {
+          matchedCountries.push(country);
+          let center = getCountryCenter(country);
+          bounds.extend(center);
+          html += `<h3>${booksData[country].flag || ''} ${country}</h3><ul>`;
+          matchedBooks.forEach(book => {
+            html += `<li><strong>${book.title}</strong> by ${book.author} (${book.year})<br>
+              Picked: ${book.monthPicked}<br>Rating: ⭐ ${book.rating}</li>`;
+          });
+          html += `</ul>`;
+        }
+      }
+
+      if (matchedCountries.length) {
+        if (matchedCountries.length === 1) {
+          showCountryBooks(matchedCountries[0]);
+        } else {
+          map.flyToBounds(bounds.pad(0.5), { duration: 1 });
+          document.getElementById('infoPanel').innerHTML = html;
+        }
+      }
+
+      highlightMonthDot(month);
+    }
+
+    function getCountryCenter(countryName) {
+      let center = [20, 0];
+      geoLayer.eachLayer(layer => {
+        if (layer.feature.properties.name === countryName) {
+          center = layer.getBounds().getCenter();
+        }
+      });
+      return center;
+    }
+
+    function highlightMonthDot(month) {
+      const dots = document.querySelectorAll('.month-dot');
+      const labels = document.querySelectorAll('.month-label');
+      dots.forEach(dot => dot.setAttribute('fill', '#6c5ce7'));
+      labels.forEach(label => label.setAttribute('fill', '#2d3436'));
+
+      const index = [...labels].findIndex(label => label.textContent === month);
+      if (index >= 0) {
+        dots[index].setAttribute('fill', '#d63031');
+        labels[index].setAttribute('fill', '#d63031');
+      }
+    }
+
+    function renderCountriesPanel() {
+      const container = document.getElementById('countriesPanel');
+      container.innerHTML = '<div class="panel-title">🌐 Countries</div>';
+      Object.keys(booksData).forEach(country => {
+        const count = booksData[country].books.length;
+        const div = document.createElement('div');
+        div.className = 'country-item';
+        div.textContent = `${booksData[country].flag || ''} ${country} (${count})`;
+        div.addEventListener('click', () => showCountryBooks(country));
+        container.appendChild(div);
+      });
+    }
+
+    function renderBooksPanel() {
+      const container = document.getElementById('booksPanel');
+      container.innerHTML = '<div class="panel-title">📖 Books</div><div id="book-list"></div>';
+      const booksList = [];
+
+      for (const country in booksData) {
+        booksData[country].books.forEach(book => {
+          booksList.push({
+            ...book,
+            country,
+            flag: booksData[country].flag
+          });
+        });
+      }
+
+      booksList.sort((a, b) => new Date('1 ' + a.monthPicked) - new Date('1 ' + b.monthPicked));
+	  const bookListContainer = document.getElementById('book-list');
+
+      booksList.forEach(book => {
+        const div = document.createElement('div');
+        div.className = 'book-item';
+        div.innerHTML = `<strong>${book.title}</strong><br>${book.author}<br>${book.flag} ${book.country}<br><small>${book.monthPicked} • ⭐ ${book.rating}</small>`;
+        div.addEventListener('click', () => {
+          showCountryBooks(book.country);
+          highlightMonthDot(book.monthPicked);
+        });
+        bookListContainer.appendChild(div);
+      });
+    }
+
+    generateTimeline();
+    renderCountriesPanel();
+    renderBooksPanel();
+  </script>
+</body>
+</html>
