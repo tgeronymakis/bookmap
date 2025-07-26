@@ -285,17 +285,39 @@ fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.g
   });
 
 
-    function getFillColor(featureName) {
+   function getFillColor(featureName) {
   const countryData = booksData[featureName];
   if (!countryData) return '#dfe6e9';
 
   const count = countryData.books.length;
   const capped = Math.min(count, 20);
 
-  // Generate color scale from HSL: 220 (blue) to 300 (purple)
-  const hue = 220 + (80 * (capped - 1)) / 19;
-  return `hsl(${hue}, 70%, 60%)`;
+  const popColors = [
+    '#6c5ce7', // 1
+    '#00b894', // 2
+    '#fdcb6e', // 3
+    '#e17055', // 4
+    '#0984e3', // 5
+    '#fd79a8', // 6
+    '#00cec9', // 7
+    '#fab1a0', // 8
+    '#d63031', // 9
+    '#74b9ff', // 10
+    '#55efc4', // 11
+    '#ffeaa7', // 12
+    '#e84393', // 13
+    '#81ecec', // 14
+    '#ff7675', // 15
+    '#a29bfe', // 16
+    '#636e72', // 17
+    '#fd9644', // 18
+    '#20bf6b', // 19
+    '#eb3b5a'  // 20
+  ];
+
+  return popColors[capped - 1] || '#6c5ce7';
 }
+
 
 
     function showCountryBooks(country) {
