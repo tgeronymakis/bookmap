@@ -281,15 +281,17 @@ fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.g
 
 
     function getFillColor(featureName) {
-      if (!booksData[featureName]) return '#dfe6e9';
-      switch (booksData[featureName].books.length) {
-        case 2: return '#E39A0E';
-        case 3: return '#0EE358';
-        case 4: return '#E30EB5';
-	case 1: return '#6c5ce7'; 
-        default: return '#6c5ce7';
-      }
-    }
+  const countryData = booksData[featureName];
+  if (!countryData) return '#dfe6e9';
+
+  const count = countryData.books.length;
+  const capped = Math.min(count, 20);
+
+  // Generate color scale from HSL: 220 (blue) to 300 (purple)
+  const hue = 220 + (80 * (capped - 1)) / 19;
+  return `hsl(${hue}, 70%, 60%)`;
+}
+
 
     function showCountryBooks(country) {
       const info = booksData[country];
