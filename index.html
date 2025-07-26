@@ -240,7 +240,8 @@
 
     let geoLayer;
 
-    let highlightedLayer = null;  // keep track of currently highlighted country
+    let highlightedLayer = null;
+let originalStyleMap = new Map(); // store original styles by layer
 
 fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
   .then(res => res.json())
@@ -254,26 +255,30 @@ fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.g
       }),
       onEachFeature: (feature, layer) => {
         const country = feature.properties.name;
+
+        // Store the original style once
+        originalStyleMap.set(layer, {
+          fillColor: getFillColor(country),
+          fillOpacity: booksData[country] ? 0.7 : 0.2
+        });
+
         layer.on('click', () => {
-          // Revert previous highlighted layer if any
+          // Revert previous
           if (highlightedLayer && highlightedLayer !== layer) {
-            highlightedLayer.setStyle({
-              fillColor: highlightedLayer.options.fillColor,
-              fillOpacity: highlightedLayer.options.fillOpacity
-            });
+            const original = originalStyleMap.get(highlightedLayer);
+            highlightedLayer.setStyle(original);
           }
 
-          // Save this layer as currently highlighted
-          highlightedLayer = layer;
-
-          // Set this layer's style to green
+          // Highlight current in red
           layer.setStyle({
-            fillColor: '#27b338',
-            fillOpacity: 0.7
+            fillColor: '#e74c3c',
+            fillOpacity: 0.8
           });
 
+          highlightedLayer = layer;
           showCountryBooks(country);
         });
+
         layer.bindTooltip(country);
       }
     }).addTo(map);
